@@ -21,8 +21,16 @@ import type { MatchReason } from "@/utils/ai/choose-rule/types";
 import { sanitizeActionFields } from "@/utils/action-item";
 import { extractEmailAddress } from "@/utils/email";
 import { analyzeSenderPattern } from "@/app/api/ai/analyze-sender-pattern/call-analyze-pattern-api";
+import type { OutlookClient } from "@/utils/outlook/client";
+import { EmailProvider } from "@/utils/email/provider";
 
 const logger = createScopedLogger("ai-run-rules");
+
+type EmailClient = gmail_v1.Gmail | OutlookClient;
+
+function isGmailClient(client: EmailClient): client is gmail_v1.Gmail {
+  return "users" in client;
+}
 
 export type RunRulesResult = {
   rule?: Rule | null;
@@ -33,31 +41,34 @@ export type RunRulesResult = {
 };
 
 export async function runRules({
-  gmail,
+  client,
   message,
   rules,
   emailAccount,
   isTest,
 }: {
-  gmail: gmail_v1.Gmail;
+  client: EmailProvider;
   message: ParsedMessage;
   rules: RuleWithActionsAndCategories[];
   emailAccount: EmailAccountWithAI;
   isTest: boolean;
 }): Promise<RunRulesResult> {
+  console.log("TEST LOG 4");
   const result = await findMatchingRule({
     rules,
     message,
     emailAccount,
-    gmail,
+    client,
   });
 
+  console.log("TEST LOG 5");
   analyzeSenderPatternIfAiMatch({
     isTest,
     result,
     message,
     emailAccountId: emailAccount.id,
   });
+  console.log("TEST LOG 6");
 
   logger.trace("Matching rule", { result });
 
@@ -66,7 +77,7 @@ export async function runRules({
       result.rule,
       message,
       emailAccount,
-      gmail,
+      client,
       result.reason,
       result.matchReasons,
       isTest,
@@ -86,7 +97,7 @@ async function executeMatchedRule(
   rule: RuleWithActionsAndCategories,
   message: ParsedMessage,
   emailAccount: EmailAccountWithAI,
-  gmail: gmail_v1.Gmail,
+  client: EmailProvider,
   reason: string | undefined,
   matchReasons: MatchReason[] | undefined,
   isTest: boolean,
@@ -96,7 +107,7 @@ async function executeMatchedRule(
     message,
     emailAccount,
     selectedRule: rule,
-    gmail,
+    client,
   });
 
   // handle action
@@ -119,7 +130,7 @@ async function executeMatchedRule(
 
   if (shouldExecute) {
     await executeAct({
-      gmail,
+      client,
       userEmail: emailAccount.email,
       userId: emailAccount.userId,
       emailAccountId: emailAccount.id,
