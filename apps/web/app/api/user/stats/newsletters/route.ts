@@ -148,18 +148,6 @@ async function getNewsletterCounts(
     andClause?: boolean;
   },
 ): Promise<NewsletterCountResult[]> {
-  logger.info("Getting newsletter counts", {
-    emailAccountId: options.emailAccountId,
-    fromDate: options.fromDate,
-    toDate: options.toDate,
-    read: options.read,
-    unread: options.unread,
-    archived: options.archived,
-    unarchived: options.unarchived,
-    limit: options.limit,
-    orderBy: options.orderBy,
-  });
-
   // Collect SQL query conditions
   const whereConditions: string[] = [];
   const queryParams: Array<string | Date> = [];

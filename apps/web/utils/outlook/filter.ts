@@ -38,7 +38,8 @@ export async function createFilter(options: {
       .api("/me/mailFolders/inbox/messageRules")
       .post(rule);
 
-    return response;
+    // Return a response object with status to match Gmail's format
+    return { status: 201, data: response };
   } catch (error) {
     if (isFilterExistsError(error)) {
       logger.warn("Filter already exists", { from });
@@ -78,7 +79,8 @@ export async function createAutoArchiveFilter({
       .api("/me/mailFolders/inbox/messageRules")
       .post(rule);
 
-    return response;
+    // Return a response object with status to match Gmail's format
+    return { status: 201, data: response };
   } catch (error) {
     if (isFilterExistsError(error)) {
       logger.warn("Auto-archive filter already exists", { from });
@@ -95,10 +97,13 @@ export async function deleteFilter(options: {
   const { client, id } = options;
 
   try {
-    return await client
+    await client
       .getClient()
       .api(`/me/mailFolders/inbox/messageRules/${id}`)
       .delete();
+
+    // Return a response object with status to match Gmail's format
+    return { status: 204 };
   } catch (error) {
     logger.error("Error deleting Outlook filter", { id, error });
     throw error;
