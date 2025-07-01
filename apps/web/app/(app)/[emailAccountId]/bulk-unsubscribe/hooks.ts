@@ -216,16 +216,21 @@ export function useAutoArchive<T extends Row>({
 
     setAutoArchiveLoading(true);
 
-    await autoArchive({
-      name: item.name,
-      labelId: undefined,
-      labelName: undefined,
-      mutate,
-      refetchPremium,
-      emailAccountId,
-    });
+    try {
+      await autoArchive({
+        name: item.name,
+        labelId: undefined,
+        labelName: undefined,
+        mutate,
+        refetchPremium,
+        emailAccountId,
+      });
 
-    posthog.capture("Clicked Auto Archive");
+      posthog.capture("Clicked Auto Archive");
+    } catch (error) {
+      captureException(error);
+      console.error(error);
+    }
 
     setAutoArchiveLoading(false);
   }, [
@@ -240,17 +245,22 @@ export function useAutoArchive<T extends Row>({
   const onDisableAutoArchive = useCallback(async () => {
     setAutoArchiveLoading(true);
 
-    if (item.autoArchived?.id) {
-      await onDeleteFilter({
-        emailAccountId,
-        filterId: item.autoArchived.id,
+    try {
+      if (item.autoArchived?.id) {
+        await onDeleteFilter({
+          emailAccountId,
+          filterId: item.autoArchived.id,
+        });
+      }
+      await setNewsletterStatusAction(emailAccountId, {
+        newsletterEmail: item.name,
+        status: null,
       });
+      await mutate();
+    } catch (error) {
+      captureException(error);
+      console.error(error);
     }
-    await setNewsletterStatusAction(emailAccountId, {
-      newsletterEmail: item.name,
-      status: null,
-    });
-    await mutate();
 
     setAutoArchiveLoading(false);
   }, [item.name, item.autoArchived?.id, mutate, emailAccountId]);
@@ -261,14 +271,19 @@ export function useAutoArchive<T extends Row>({
 
       setAutoArchiveLoading(true);
 
-      await autoArchive({
-        name: item.name,
-        labelId,
-        labelName,
-        mutate,
-        refetchPremium,
-        emailAccountId,
-      });
+      try {
+        await autoArchive({
+          name: item.name,
+          labelId,
+          labelName,
+          mutate,
+          refetchPremium,
+          emailAccountId,
+        });
+      } catch (error) {
+        captureException(error);
+        console.error(error);
+      }
 
       setAutoArchiveLoading(false);
     },
@@ -303,15 +318,20 @@ export function useBulkAutoArchive<T extends Row>({
 
       setBulkAutoArchiveLoading(true);
 
-      for (const item of items) {
-        await autoArchive({
-          name: item.name,
-          labelId: undefined,
-          labelName: undefined,
-          mutate,
-          refetchPremium,
-          emailAccountId,
-        });
+      try {
+        for (const item of items) {
+          await autoArchive({
+            name: item.name,
+            labelId: undefined,
+            labelName: undefined,
+            mutate,
+            refetchPremium,
+            emailAccountId,
+          });
+        }
+      } catch (error) {
+        captureException(error);
+        console.error(error);
       }
 
       setBulkAutoArchiveLoading(false);
