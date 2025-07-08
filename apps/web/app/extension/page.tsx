@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createScopedLogger } from "@/utils/logger";
 
 const logger = createScopedLogger("extension");
@@ -9,10 +9,13 @@ const logger = createScopedLogger("extension");
 export default function ExtensionPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const threadId = searchParams.get("threadId");
   const [isValidating, setIsValidating] = useState(true);
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
+  const [iframeSrc, setIframeSrc] = useState<string>("/automation");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (token) {
@@ -22,6 +25,22 @@ export default function ExtensionPage() {
       setIsValidating(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    // Listen for messages from the iframe
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data.type === "UPDATE_IFRAME_SRC") {
+        const { url } = event.data;
+        setIframeSrc(url);
+        logger.info("Updating iframe src", { url });
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   const validateSessionToken = async () => {
     if (!token) return;
@@ -56,6 +75,22 @@ export default function ExtensionPage() {
     }
   };
 
+  // Determine the initial iframe src based on threadId
+  useEffect(() => {
+    if (isValid && userData && threadId) {
+      // If we have a threadId, open the assistant page
+      const assistantUrl = `/assistant?threadId=${threadId}`;
+      setIframeSrc(assistantUrl);
+      logger.info("Setting iframe to assistant with threadId", {
+        threadId,
+        assistantUrl,
+      });
+    } else if (isValid && userData) {
+      // Default to automation page
+      setIframeSrc("/automation");
+    }
+  }, [isValid, userData, threadId]);
+
   if (isValidating) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -87,7 +122,8 @@ export default function ExtensionPage() {
     return (
       <div className="h-screen w-full">
         <iframe
-          src="/"
+          ref={iframeRef}
+          src={iframeSrc}
           className="h-full w-full border-0"
           title="Inbox Zero"
           allow="clipboard-read; clipboard-write"

@@ -36,6 +36,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ExamplesDialog } from "@/components/assistant-chat/examples-dialog";
 import { Tooltip } from "@/components/Tooltip";
 import { toastError } from "@/components/Toast";
+import { AssistantFixWithChat } from "@/app/(app)/[emailAccountId]/assistant/AssistantFixWithChat";
 
 // Some mega hacky code used here to workaround AI SDK's use of SWR
 // AI SDK uses SWR too and this messes with the global SWR config
@@ -70,9 +71,10 @@ function ChatWithEmptySWR(props: ChatProps & { chatId: string }) {
 
   const { data } = useChatMessages(props.chatId);
 
-  const [{ input, tab }] = useQueryStates({
+  const [{ input, tab, threadId }] = useQueryStates({
     input: parseAsString,
     tab: parseAsString,
+    threadId: parseAsString,
   });
 
   const initialInput = useMemo(() => {
@@ -93,6 +95,7 @@ function ChatWithEmptySWR(props: ChatProps & { chatId: string }) {
         initialInput={initialInput}
         chatId={props.chatId}
         tab={tab || undefined}
+        threadId={threadId || undefined}
       />
     </SWRConfig>
   );
@@ -105,12 +108,14 @@ function ChatInner({
   mutate,
   initialInput,
   tab,
+  threadId,
 }: ChatProps & {
   chatId: string;
   initialMessages: Array<UIMessage>;
   mutate: ScopedMutator;
   initialInput?: string;
   tab?: string;
+  threadId?: string;
 }) {
   const chat = useChat({
     id: chatId,
@@ -141,7 +146,7 @@ function ChatInner({
 
   const isMobile = useIsMobile();
 
-  const chatPanel = <ChatUI chat={chat} />;
+  const chatPanel = <ChatUI chat={chat} threadId={threadId} />;
 
   return (
     <ChatProvider setInput={chat.setInput}>
@@ -168,7 +173,13 @@ function ChatInner({
   );
 }
 
-function ChatUI({ chat }: { chat: ReturnType<typeof useChat> }) {
+function ChatUI({
+  chat,
+  threadId,
+}: {
+  chat: ReturnType<typeof useChat>;
+  threadId?: string;
+}) {
   const {
     messages,
     setMessages,
@@ -198,6 +209,11 @@ function ChatUI({ chat }: { chat: ReturnType<typeof useChat> }) {
             <ChatHistoryDropdown />
           </SWRProvider>
           <OpenArtifactButton />
+          {threadId && (
+            <SWRProvider>
+              <AssistantFixWithChat setInput={setInput} />
+            </SWRProvider>
+          )}
         </div>
       </div>
 
