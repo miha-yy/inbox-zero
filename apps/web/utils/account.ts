@@ -134,7 +134,10 @@ async function getTokens({ emailAccountId }: { emailAccountId: string }) {
   };
 }
 
-export async function redirectToEmailAccountPath(path: `/${string}`) {
+export async function redirectToEmailAccountPath(
+  path: `/${string}`,
+  searchParams?: Record<string, string>,
+) {
   const session = await auth();
   const userId = session?.user.id;
   if (!userId) throw new Error("Not authenticated");
@@ -147,7 +150,18 @@ export async function redirectToEmailAccountPath(path: `/${string}`) {
     notFound();
   }
 
-  const redirectUrl = `/${emailAccount.id}${path}`;
+  let redirectUrl = `/${emailAccount.id}${path}`;
+
+  // Add search parameters if provided
+  if (searchParams && Object.keys(searchParams).length > 0) {
+    const params = new URLSearchParams();
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value) {
+        params.append(key, value);
+      }
+    });
+    redirectUrl += `?${params.toString()}`;
+  }
 
   redirect(redirectUrl);
 }

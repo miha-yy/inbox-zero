@@ -280,7 +280,32 @@ const nextConfig: NextConfig = {
       },
       // Main app routes when accessed from extension
       {
-        source: "/",
+        source: "/:emailAccountId/automation",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "ALLOWALL",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+              "style-src 'self' 'unsafe-inline' https:",
+              "font-src 'self' data: https:",
+              "img-src 'self' data: https: blob: https://image.mux.com https://*.litix.io",
+              "media-src 'self' blob: https://*.mux.com",
+              "worker-src 'self' blob:",
+              "connect-src 'self' https: wss: https://*.mux.com https://*.litix.io",
+              "frame-src 'self' https: chrome-extension://*",
+              // Allow iframe embedding from chrome extensions
+              "frame-ancestors 'self' chrome-extension://*",
+            ].join("; "),
+          },
+        ],
+      },
+      {
+        source: "/:emailAccountId/assistant",
         headers: [
           {
             key: "X-Frame-Options",
